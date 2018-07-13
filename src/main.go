@@ -4,10 +4,12 @@ import (
 	"fmt"
 
 	"github.com/melonmanchan/dippa-writer/src/config"
-	_ "github.com/melonmanchan/dippa-writer/src/models"
+	"github.com/melonmanchan/dippa-writer/src/models"
 )
 
 func main() {
 	config := config.ParseConfig()
-	fmt.Printf("%v", config)
+
+	err := models.PerformPendingMigrations(config.MigrationsPath, config.DatabaseURL)
+	fmt.Printf("%v", err)
 }

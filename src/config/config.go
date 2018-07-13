@@ -8,9 +8,10 @@ type Config struct {
 	MigrationsPath string
 }
 
+// postgres://mattes:secret@localhost:5432/database
 var defaultConf = Config{
-	DatabaseURL:    "postres://localhost:5432",
-	MigrationsPath: "./migrations",
+	DatabaseURL:    "postgres://mattij@localhost:5432/dippa?sslmode=disable",
+	MigrationsPath: "file://migrations",
 }
 
 func ParseConfig() Config {

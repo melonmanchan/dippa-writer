@@ -6,6 +6,8 @@ import (
 
 	"github.com/golang-migrate/migrate"
 	_ "github.com/golang-migrate/migrate/database/postgres"
+	_ "github.com/golang-migrate/migrate/source/file"
+	"github.com/pkg/errors"
 
 	_ "github.com/lib/pq"
 
@@ -19,17 +21,20 @@ type Client struct {
 
 // PerformPendingMigrations ...
 func PerformPendingMigrations(path string, connectionString string) error {
+	log.Println(connectionString)
 	m, err := migrate.New(path, connectionString)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Connecting to migrations failed")
 	}
 
 	err = m.Up()
 
-	if err != nil {
-		return err
+	if err != nil && err.Error() != "no change" {
+		return errors.Wrap(err, "Creating migrations failed")
 	}
+
+	m.Close()
 
 	return nil
 }
