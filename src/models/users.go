@@ -19,3 +19,5 @@ func (c Client) createUserByName(user *User) error {
 
 	return nil
 }
+
+// Query(`INSERT INTO mytable (field1, field2) VALUES (:f1, :f2), (:f2, :f2)`, things)
