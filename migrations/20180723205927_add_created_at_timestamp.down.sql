@@ -1,0 +1,2 @@
+ALTER TABLE ONLY google_results ALTER COLUMN created_at DROP DEFAULT;
+ALTER TABLE ONLY watson_results ALTER COLUMN created_at DROP DEFAULT;

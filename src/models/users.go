@@ -8,7 +8,7 @@ type User struct {
 	Name string `json:"name" db:"name"`
 }
 
-func (c Client) createUserByName(user *User) error {
+func (c Client) CreateUserByName(user *User) error {
 	_, err := c.DB.NamedExec(`
 	INSERT INTO users (name) VALUES (:name);
 	`, user)
@@ -19,5 +19,3 @@ func (c Client) createUserByName(user *User) error {
 
 	return nil
 }
-
-// Query(`INSERT INTO mytable (field1, field2) VALUES (:f1, :f2), (:f2, :f2)`, things)

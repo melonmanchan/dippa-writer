@@ -53,7 +53,7 @@ type WatsonResult struct {
 	Keywords  []Keyword `json:"keywords" db:"-"`
 }
 
-func (c Client) createGoogleResults(result *GoogleResult) error {
+func (c Client) CreateGoogleResults(result *GoogleResult) error {
 	_, err := c.DB.NamedExec(`
 		INSERT INTO google_results (detection_confidence, blurred,
 		joy, sorrow, surprise, image, user_id, room_id)
@@ -68,7 +68,7 @@ func (c Client) createGoogleResults(result *GoogleResult) error {
 	return nil
 }
 
-func (c Client) createWatsonResult(result *WatsonResult) error {
+func (c Client) CreateWatsonResult(result *WatsonResult) error {
 	tx, err := c.DB.Begin()
 
 	if err != nil {

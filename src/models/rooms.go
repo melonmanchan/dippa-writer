@@ -8,7 +8,7 @@ type Room struct {
 	Name string `json:"name" db:"name"`
 }
 
-func (c Client) createRoomByName(room *Room) error {
+func (c Client) CreateRoomByName(room *Room) error {
 	_, err := c.DB.NamedExec(`
 	INSERT INTO rooms (name) VALUES (:name);
 	`, room)
