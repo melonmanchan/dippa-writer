@@ -14,6 +14,7 @@
 package models
 
 import (
+	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -69,27 +70,28 @@ func (c Client) CreateGoogleResults(result *GoogleResult) error {
 }
 
 func (c Client) CreateWatsonResult(result *WatsonResult) error {
+	var latestId int
 	tx, err := c.DB.Begin()
 
 	if err != nil {
-		return errors.Wrap(err, "Could not instantiate transactionf for inserting new watson result")
+		return errors.Wrap(err, "Could not instantiate transaction for inserting new watson result")
 	}
 
-	_, err = tx.Exec(`
+	err = tx.QueryRow(`
 		INSERT INTO watson_results (contents, user_id, room_id)
-		VALUES ($1, $2, $3)
-	`, result)
+		VALUES ($1, $2, $3) RETURNING id;
+	`, result.Contents, result.UserID, result.RoomID).Scan(&latestId)
 
 	if err != nil {
-		return errors.Wrap(err, "Could not insert a new google analytics result")
+		return errors.Wrap(err, "Could not insert a new watson analytics result")
 	}
 
 	if len(result.Keywords) == 0 {
 		return tx.Commit()
 	}
 
-	stmt, err := tx.Prepare(`INSERT INTO keywords (contents, sentiment, relevance, sadness, joy, fear, disgust, anger)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	stmt, err := tx.Prepare(`INSERT INTO keywords (contents, sentiment, relevance, sadness, joy, fear, disgust, anger, watson_id)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`)
 
 	if err != nil {
@@ -98,13 +100,15 @@ func (c Client) CreateWatsonResult(result *WatsonResult) error {
 
 	defer stmt.Close()
 
+	log.Println(latestId)
+
 	for _, k := range result.Keywords {
-		_, err = stmt.Exec(k.Contents, k.Sentiment, k.Relevance, k.Sadness, k.Joy, k.Fear, k.Disgust, k.Anger)
+		_, err = stmt.Exec(k.Contents, k.Sentiment, k.Relevance, k.Sadness, k.Joy, k.Fear, k.Disgust, k.Anger, latestId)
 		if err != nil {
 			tx.Rollback()
 			return errors.Wrap(err, "Could not insert new keyword")
 		}
 	}
 
-	return nil
+	return tx.Commit()
 }
