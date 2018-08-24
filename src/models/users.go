@@ -8,14 +8,20 @@ type User struct {
 	Name string `json:"name" db:"name"`
 }
 
-func (c Client) CreateUserByName(user *User) error {
-	_, err := c.DB.NamedExec(`
-	INSERT INTO users (name) VALUES (:name);
+func (c Client) CreateUserByName(user *User) (int64, error) {
+	res, err := c.DB.NamedExec(`
+	INSERT INTO users (name) VALUES (:name) ON CONFLICT ON CONSTRAINT constraint_name DO UPDATE SET name = :name RETURNING id;
 	`, user)
 
 	if err != nil {
-		return errors.Wrap(err, "Could not insert a new user")
+		return -1, errors.Wrap(err, "Could not insert a new user")
 	}
 
-	return nil
+	lastId, err := res.LastInsertId()
+
+	if err != nil {
+		return -1, errors.Wrap(err, "Could not retrieve last insert id")
+	}
+
+	return lastId, nil
 }

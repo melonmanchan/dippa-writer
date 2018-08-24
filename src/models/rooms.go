@@ -8,14 +8,20 @@ type Room struct {
 	Name string `json:"name" db:"name"`
 }
 
-func (c Client) CreateRoomByName(room *Room) error {
-	_, err := c.DB.NamedExec(`
-	INSERT INTO rooms (name) VALUES (:name);
+func (c Client) CreateRoomByName(room *Room) (int64, error) {
+	res, err := c.DB.NamedExec(`
+	INSERT INTO rooms (name) VALUES (:name) ON CONFLICT ON CONSTRAINT constraint_name DO UPDATE SET name = :name RETURNING id;
 	`, room)
 
 	if err != nil {
-		return errors.Wrap(err, "Could not insert a new room")
+		return -1, errors.Wrap(err, "Could not insert a new room")
 	}
 
-	return nil
+	lastId, err := res.LastInsertId()
+
+	if err != nil {
+		return -1, errors.Wrap(err, "Could not retrieve last insert id")
+	}
+
+	return lastId, nil
 }

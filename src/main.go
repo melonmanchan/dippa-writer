@@ -24,17 +24,20 @@ func consumeImagesData(db *models.Client, chann <-chan amqp.Delivery, wg *sync.W
 
 		imageRes, user, room := models.GoogleProtoToGoStructs(*googleFacialRecognitionRes)
 
-		err := db.CreateUserByName(&user)
+		userId, err := db.CreateUserByName(&user)
 
 		if err != nil {
 			log.Println(err)
 		}
 
-		err = db.CreateRoomByName(&room)
+		roomId, err := db.CreateRoomByName(&room)
 
 		if err != nil {
 			log.Println(err)
 		}
+
+		imageRes.UserID = userId
+		imageRes.RoomID = roomId
 
 		err = db.CreateGoogleResults(&imageRes)
 
@@ -53,6 +56,29 @@ func consumeTextData(db *models.Client, chann <-chan amqp.Delivery, wg *sync.Wai
 		if err := proto.Unmarshal(d.Body, watsonTextRes); err != nil {
 			log.Print("Failed to parse input for watson: ", err)
 			break
+		}
+
+		textRes, user, room := models.WatsonProtoToGoStructs(*watsonTextRes)
+
+		userId, err := db.CreateUserByName(&user)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		roomId, err := db.CreateRoomByName(&room)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		textRes.UserID = userId
+		textRes.RoomID = roomId
+
+		err = db.CreateWatsonResult(&textRes)
+
+		if err != nil {
+			log.Println(err)
 		}
 	}
 	wg.Done()
