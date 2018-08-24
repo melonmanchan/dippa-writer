@@ -1,44 +1,101 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"sync"
 
+	"github.com/golang/protobuf/proto"
+	types "github.com/melonmanchan/dippa-proto/build/go"
 	"github.com/melonmanchan/dippa-writer/src/config"
 	"github.com/melonmanchan/dippa-writer/src/models"
+	"github.com/melonmanchan/dippa-writer/src/rabbit"
+	"github.com/streadway/amqp"
 )
 
+func consumeImagesData(db *models.Client, chann <-chan amqp.Delivery, wg *sync.WaitGroup) {
+	for d := range chann {
+
+		googleFacialRecognitionRes := &types.GoogleFacialRecognition{}
+
+		if err := proto.Unmarshal(d.Body, googleFacialRecognitionRes); err != nil {
+			log.Print("Failed to parse input for google: ", err)
+			break
+		}
+
+		imageRes, user, room := models.GoogleProtoToGoStructs(*googleFacialRecognitionRes)
+
+		err := db.CreateUserByName(&user)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		err = db.CreateRoomByName(&room)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		err = db.CreateGoogleResults(&imageRes)
+
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	wg.Done()
+}
+
+func consumeTextData(db *models.Client, chann <-chan amqp.Delivery, wg *sync.WaitGroup) {
+	for d := range chann {
+
+		watsonTextRes := &types.WatsonNLP{}
+
+		if err := proto.Unmarshal(d.Body, watsonTextRes); err != nil {
+			log.Print("Failed to parse input for watson: ", err)
+			break
+		}
+	}
+	wg.Done()
+}
+
 func main() {
+	var wg sync.WaitGroup
+	wg.Add(2)
+
 	config := config.ParseConfig()
 
 	err := models.PerformPendingMigrations(config.MigrationsPath, config.DatabaseURL)
-	fmt.Printf("%v", err)
 
 	c, err := models.ConnectToDatabase(config.DatabaseURL)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s", err)
 	}
 
-	user := models.WatsonResult{
-		Contents: "hello world",
-		UserID:   1,
-		RoomID:   1,
-		Keywords: []models.Keyword{
-			models.Keyword{
-				Contents:  "hello world",
-				Sentiment: 1,
-				Relevance: 1,
-				Sadness:   1,
-				Joy:       1,
-				Fear:      1,
-				Disgust:   1,
-				Anger:     1,
-			},
-		},
+	chann, err := rabbit.TryConnectToQueue(config.RabbitMQConn)
+
+	if err != nil {
+		log.Fatalf("%s", err)
 	}
 
-	err = c.CreateWatsonResult(&user)
+	defer chann.Close()
 
-	log.Println(err)
+	images, err := rabbit.GetChannelToConsume(chann, "google_results")
+
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	text, err := rabbit.GetChannelToConsume(chann, "ibm_text")
+
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+
+	go consumeImagesData(c, images, &wg)
+	go consumeTextData(c, text, &wg)
+
+	wg.Wait()
+
+	log.Println("All goroutines exitted")
 }

@@ -1,21 +1,11 @@
-//
-//CREATE TABLE google_results (
-//    id bigserial primary key,
-//    created_at TIMESTAMPTZ,
-//    detection_confidence DECIMAL(4) NOT NULL,
-//    blurred DECIMAL(4) NOT NULL,
-//    joy DECIMAL(4) NOT NULL,
-//    sorrow DECIMAL(4) NOT NULL,
-//    surprise DECIMAL(4) NOT NULL,
-//    image bytea NOT NULL,
-//    user_id integer REFERENCES users(id) NOT NULL
-//);
-//
 package models
 
 import (
 	"log"
 	"time"
+
+	ptypes "github.com/golang/protobuf/ptypes"
+	types "github.com/melonmanchan/dippa-proto/build/go"
 
 	"github.com/pkg/errors"
 )
@@ -31,6 +21,31 @@ type GoogleResult struct {
 	Image               []byte    `json:"image" db:"image"`
 	UserID              int64     `json:"user_id" db:"user_id"`
 	RoomID              int64     `json:"room_id" db:"room_id"`
+}
+
+func GoogleProtoToGoStructs(res types.GoogleFacialRecognition) (GoogleResult, User, Room) {
+	timestampAsTime, _ := ptypes.Timestamp(res.CreatedAt)
+
+	googleResult := GoogleResult{
+		ID:                  0,
+		CreatedAt:           timestampAsTime,
+		DetectionConfidence: res.Emotion.DetectionConfidence,
+		Blurred:             res.Emotion.Blurred,
+		Joy:                 res.Emotion.Joy,
+		Sorrow:              res.Emotion.Sorrow,
+		Image:               res.Image,
+		UserID:              0,
+	}
+
+	user := User{
+		Name: res.User.Username,
+	}
+
+	room := Room{
+		Name: res.User.Room,
+	}
+
+	return googleResult, user, room
 }
 
 type Keyword struct {
@@ -52,6 +67,44 @@ type WatsonResult struct {
 	UserID    int64     `json:"user_id" db:"user_id"`
 	RoomID    int64     `json:"room_id" db:"room_id"`
 	Keywords  []Keyword `json:"keywords" db:"-"`
+}
+
+func WatsonProtoToGoStructs(res types.WatsonNLP) (WatsonResult, User, Room) {
+	timestampAsTime, _ := ptypes.Timestamp(res.CreatedAt)
+
+	var keywords []Keyword
+	protoKeywords := res.GetKeywords()
+
+	for _, k := range protoKeywords {
+		keywords = append(keywords, Keyword{
+			Contents:  k.Contents,
+			Sentiment: k.Sentiment,
+			Relevance: k.Relevance,
+			Sadness:   k.Emotion.Sadness,
+			Joy:       k.Emotion.Joy,
+			Fear:      k.Emotion.Fear,
+			Disgust:   k.Emotion.Disgust,
+			Anger:     k.Emotion.Anger,
+		})
+	}
+
+	watsonResult := WatsonResult{
+		ID:        0,
+		CreatedAt: timestampAsTime,
+		Contents:  res.Contents,
+		UserID:    0,
+		Keywords:  keywords,
+	}
+
+	user := User{
+		Name: res.User.Username,
+	}
+
+	room := Room{
+		Name: res.User.Room,
+	}
+
+	return watsonResult, user, room
 }
 
 func (c Client) CreateGoogleResults(result *GoogleResult) error {
