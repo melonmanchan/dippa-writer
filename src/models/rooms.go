@@ -9,18 +9,14 @@ type Room struct {
 }
 
 func (c Client) CreateRoomByName(room *Room) (int64, error) {
-	res, err := c.DB.NamedExec(`
-	INSERT INTO rooms (name) VALUES (:name) ON CONFLICT ON CONSTRAINT rooms_name_key DO UPDATE SET name = :name RETURNING id;
-	`, room)
+	var lastId int64
+
+	err := c.DB.QueryRow(`
+	INSERT INTO rooms (name) VALUES ($1) ON CONFLICT ON CONSTRAINT rooms_name_key DO UPDATE SET name = $1 RETURNING id;
+	`, room.Name).Scan(&lastId)
 
 	if err != nil {
 		return -1, errors.Wrap(err, "Could not insert a new room")
-	}
-
-	lastId, err := res.LastInsertId()
-
-	if err != nil {
-		return -1, errors.Wrap(err, "Could not retrieve last insert id")
 	}
 
 	return lastId, nil

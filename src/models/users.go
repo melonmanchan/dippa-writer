@@ -9,18 +9,14 @@ type User struct {
 }
 
 func (c Client) CreateUserByName(user *User) (int64, error) {
-	res, err := c.DB.NamedExec(`
-	INSERT INTO users (name) VALUES (:name) ON CONFLICT ON CONSTRAINT constraint_name DO UPDATE SET name = :name RETURNING id;
-	`, user)
+	var lastId int64
+
+	err := c.DB.QueryRow(`
+	INSERT INTO users (name) VALUES ($1) ON CONFLICT ON CONSTRAINT constraint_name DO UPDATE SET name = $1 RETURNING id;
+	`, user.Name).Scan(&lastId)
 
 	if err != nil {
 		return -1, errors.Wrap(err, "Could not insert a new user")
-	}
-
-	lastId, err := res.LastInsertId()
-
-	if err != nil {
-		return -1, errors.Wrap(err, "Could not retrieve last insert id")
 	}
 
 	return lastId, nil
