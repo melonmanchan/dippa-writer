@@ -10,7 +10,7 @@ type Room struct {
 
 func (c Client) CreateRoomByName(room *Room) (int64, error) {
 	res, err := c.DB.NamedExec(`
-	INSERT INTO rooms (name) VALUES (:name) ON CONFLICT ON CONSTRAINT constraint_name DO UPDATE SET name = :name RETURNING id;
+	INSERT INTO rooms (name) VALUES (:name) ON CONFLICT ON CONSTRAINT rooms_name_key DO UPDATE SET name = :name RETURNING id;
 	`, room)
 
 	if err != nil {

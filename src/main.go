@@ -28,12 +28,14 @@ func consumeImagesData(db *models.Client, chann <-chan amqp.Delivery, wg *sync.W
 
 		if err != nil {
 			log.Println(err)
+			break
 		}
 
 		roomId, err := db.CreateRoomByName(&room)
 
 		if err != nil {
 			log.Println(err)
+			break
 		}
 
 		imageRes.UserID = userId
