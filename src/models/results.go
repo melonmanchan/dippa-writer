@@ -16,6 +16,7 @@ type GoogleResult struct {
 	DetectionConfidence float32   `json:"detection_confidence" db:"detection_confidence"`
 	Blurred             float32   `json:"blurred" db:"blurred"`
 	Joy                 float32   `json:"joy" db:"joy"`
+	Anger               float32   `json:"anger" db:"anger"`
 	Sorrow              float32   `json:"sorrow" db:"sorrow"`
 	Surprise            float32   `json:"surprise" db:"surprise"`
 	Image               []byte    `json:"image" db:"image"`
@@ -33,6 +34,7 @@ func GoogleProtoToGoStructs(res types.GoogleFacialRecognition) (GoogleResult, Us
 		Blurred:             res.Emotion.Blurred,
 		Joy:                 res.Emotion.Joy,
 		Sorrow:              res.Emotion.Sorrow,
+		Anger:               res.Emotion.Anger,
 		Image:               res.Image,
 		UserID:              0,
 	}
@@ -76,16 +78,22 @@ func WatsonProtoToGoStructs(res types.WatsonNLP) (WatsonResult, User, Room) {
 	protoKeywords := res.GetKeywords()
 
 	for _, k := range protoKeywords {
-		keywords = append(keywords, Keyword{
+
+		kw := Keyword{
 			Contents:  k.Contents,
 			Sentiment: k.Sentiment,
 			Relevance: k.Relevance,
-			Sadness:   k.Emotion.Sadness,
-			Joy:       k.Emotion.Joy,
-			Fear:      k.Emotion.Fear,
-			Disgust:   k.Emotion.Disgust,
-			Anger:     k.Emotion.Anger,
-		})
+		}
+
+		if k.Emotion != nil {
+			kw.Sadness = k.Emotion.Sadness
+			kw.Joy = k.Emotion.Joy
+			kw.Fear = k.Emotion.Fear
+			kw.Disgust = k.Emotion.Disgust
+			kw.Anger = k.Emotion.Anger
+		}
+
+		keywords = append(keywords, kw)
 	}
 
 	watsonResult := WatsonResult{

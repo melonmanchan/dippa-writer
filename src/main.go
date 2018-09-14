@@ -22,6 +22,8 @@ func consumeImagesData(db *models.Client, chann <-chan amqp.Delivery, wg *sync.W
 			break
 		}
 
+		log.Printf("%v \n", googleFacialRecognitionRes)
+
 		imageRes, user, room := models.GoogleProtoToGoStructs(*googleFacialRecognitionRes)
 
 		userId, err := db.CreateUserByName(&user)
@@ -60,18 +62,22 @@ func consumeTextData(db *models.Client, chann <-chan amqp.Delivery, wg *sync.Wai
 			break
 		}
 
+		log.Printf("%v \n", watsonTextRes)
+
 		textRes, user, room := models.WatsonProtoToGoStructs(*watsonTextRes)
 
 		userId, err := db.CreateUserByName(&user)
 
 		if err != nil {
 			log.Println(err)
+			break
 		}
 
 		roomId, err := db.CreateRoomByName(&room)
 
 		if err != nil {
 			log.Println(err)
+			break
 		}
 
 		textRes.UserID = userId
@@ -119,6 +125,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
+
+	log.Println("startup succesful")
 
 	go consumeImagesData(c, images, &wg)
 	go consumeTextData(c, text, &wg)
