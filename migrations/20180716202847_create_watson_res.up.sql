@@ -8,12 +8,12 @@ CREATE TABLE watson_results (
 CREATE TABLE keywords (
   id bigserial primary key,
   contents text,
-  sentiment DECIMAL(6) NOT NULL,
-  relevance DECIMAL(6) NOT NULL,
-  sadness DECIMAL(4) NOT NULL,
-  joy DECIMAL(4) NOT NULL,
-  fear DECIMAL(4) NOT NULL,
-  disgust DECIMAL(4) NOT NULL,
-  anger DECIMAL(4) NOT NULL,
+  sentiment float8 NOT NULL,
+  relevance float8 NOT NULL,
+  sadness float8 NOT NULL,
+  joy float8 NOT NULL,
+  fear float8 NOT NULL,
+  disgust float8 NOT NULL,
+  anger float8 NOT NULL,
   watson_id integer  REFERENCES watson_results(id) NOT NULL
 );
