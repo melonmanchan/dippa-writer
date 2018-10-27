@@ -22,7 +22,10 @@ func consumeImagesData(db *models.Client, chann <-chan amqp.Delivery, wg *sync.W
 			break
 		}
 
-		log.Printf("%v \n", googleFacialRecognitionRes)
+		if googleFacialRecognitionRes.Emotion == nil {
+			log.Print("Emotion is nil, not proceeding")
+			break
+		}
 
 		imageRes, user, room := models.GoogleProtoToGoStructs(*googleFacialRecognitionRes)
 
@@ -127,6 +130,7 @@ func main() {
 	}
 
 	log.Println("startup succesful")
+	log.Println("has the cache updated")
 
 	go consumeImagesData(c, images, &wg)
 	go consumeTextData(c, text, &wg)

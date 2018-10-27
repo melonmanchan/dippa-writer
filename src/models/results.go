@@ -1,7 +1,6 @@
 package models
 
 import (
-	"log"
 	"time"
 
 	ptypes "github.com/golang/protobuf/ptypes"
@@ -118,9 +117,9 @@ func WatsonProtoToGoStructs(res types.WatsonNLP) (WatsonResult, User, Room) {
 func (c Client) CreateGoogleResults(result *GoogleResult) error {
 	_, err := c.DB.NamedExec(`
 		INSERT INTO google_results (detection_confidence, blurred,
-		joy, sorrow, surprise, image, user_id, room_id)
+		joy, sorrow, surprise, image, anger, user_id, room_id)
 		VALUES (:detection_confidence, :blurred,
-		:joy, :sorrow, :surprise, :image, :user_id, :room_id)
+		:joy, :sorrow, :surprise, :image, :anger, :user_id, :room_id)
 	`, result)
 
 	if err != nil {
@@ -160,8 +159,6 @@ func (c Client) CreateWatsonResult(result *WatsonResult) error {
 	}
 
 	defer stmt.Close()
-
-	log.Println(latestId)
 
 	for _, k := range result.Keywords {
 		_, err = stmt.Exec(k.Contents, k.Sentiment, k.Relevance, k.Sadness, k.Joy, k.Fear, k.Disgust, k.Anger, latestId)
